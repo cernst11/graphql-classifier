@@ -16,6 +16,9 @@ asking a single fast yes/no judgment per field via
 - **Authorization gaps** — root fields that look privileged but carry no auth directive
 - **N+1 / expensive-field risk** — relation fields prone to unbounded fetches or per-item resolution
 - **Documentation & naming** — seven independent lint rules (casing, boolean prefixes, plural collections, redundant prefixes, vague names, verbNoun mutations, argument naming) based on [Apollo's GraphQL naming guide](https://github.com/apollographql/skills/blob/main/skills/graphql-schema/references/naming.md)
+- **Raw foreign keys** — scalar `xxxId` fields that should be a proper relation to another type in the schema
+- **Stringly-typed enums** — plain `String` fields (`status`, `role`, `category`) that should be a GraphQL `enum`
+- **Missing payload pattern** — mutations returning a raw entity or bare scalar with no typed way to surface errors
 
 Every finding carries a probability score, is tunable via `--threshold`, and
 a full run typically finishes in a couple of seconds even on a 100+ field
@@ -53,6 +56,9 @@ one-time warning — rename it to `TYPESAFE_API_KEY` to silence that.
 | PII / Sensitive Data | `pii` | Fields that likely represent PII or other sensitive data — credit card numbers, SSNs, emails, health data, credentials, precise geolocation, biometrics. |
 | Authorization Gaps | `auth-gap` | Root `Query`/`Mutation`/`Subscription` fields that look like they need authorization but have no auth-related directive (`@auth`, `@authenticated`, `@hasRole`, `@requiresScope`, `@permission`, `@policy`, `@isAdmin`, etc.) detected in the schema. Bare `@scopes` (a scope listing with no implied enforcement) does **not** count as coverage. **Heuristic** — it only sees the SDL, not resolver-level or middleware auth, so treat findings as triage signals, not ground truth. |
 | Expensive Fields (N+1 Risk) | `expensive-field` | Relation fields at risk of the classic GraphQL N+1 problem or unbounded fetches: lists of related types with no pagination arguments, and to-one relations on types that themselves commonly appear inside a list elsewhere in the schema. **Heuristic** — combines a structural pre-filter (candidates only) with an LLM severity judgment; cannot see actual resolver batching (e.g. DataLoader) or database indexes. |
+| Raw Foreign Key / DB Leakage | `db-leakage` | Scalar `xxxId`/`xxx_id` fields whose base name matches another Object/Interface type already defined in the schema (e.g. `authorId: ID!` when a `User` type exists) — a raw foreign key exposed instead of a proper relation (`author: User!`). Only evaluates non-list scalar id-like fields on Object/Interface types (input types must use scalar refs, so they're excluded). |
+| Stringly-Typed Enum Candidate | `stringly-typed` | Plain `String` fields whose name (`status`, `role`, `category`, `type`, `tier`, ...) suggests a fixed value set that should be a GraphQL `enum` instead. Only evaluates plain-`String` fields, not `ID`/custom scalars/lists. |
+| Missing Error/Payload Pattern | `mutation-payload` | Mutation-type fields whose return type doesn't already look like a dedicated `*Payload`/`*Result` wrapper — i.e. returns a raw domain entity or bare scalar with no typed way to surface success/error details. Deterministic pre-filter skips mutations whose return type already ends in `Payload`/`Result`. |
 
 **Documentation & Naming** (per [Apollo's GraphQL schema naming guide](https://github.com/apollographql/skills/blob/main/skills/graphql-schema/references/naming.md)) is a *family* of seven narrowly-scoped lint rules rather than one opaque flag, so a report says *which* convention a field violates:
 
@@ -66,7 +72,7 @@ one-time warning — rename it to `TYPESAFE_API_KEY` to silence that.
 | `doc-mutation-verb-noun` | Mutation-type field not following a clear `verbNoun` pattern. Only evaluates fields on the schema's actual Mutation type. |
 | `doc-argument-naming` | Generic/unclear argument names (e.g. `filter`/`options` typed as a raw blob). Only evaluates fields that have arguments. |
 
-By default all ten analyses run; pick a subset with `--analysis`, including
+By default all thirteen analyses run; pick a subset with `--analysis`, including
 the whole doc-quality family at once with the wildcard `"doc-*"`.
 
 ## Usage
@@ -105,7 +111,7 @@ npm run dev -- examples/schema
 | `--threshold <0-1>` | `0.6` | Probability at/above which a field is flagged (applies to every analysis run). |
 | `--out <file>` | none | Also write the full JSON report to this path. |
 | `--format <table\|json>` | `table` | stdout rendering. |
-| `--concurrency <n>` | `4` | Max concurrent classification batch calls, **per analysis** (running `all` — 10 analyses — can peak at up to `10 × concurrency` calls in flight across analyses). |
+| `--concurrency <n>` | `4` | Max concurrent classification batch calls, **per analysis** (running `all` — 13 analyses — can peak at up to `13 × concurrency` calls in flight across analyses). |
 | `--model <name>` | SDK default | Optional Jev model override. |
 
 ### Exit codes
@@ -200,9 +206,12 @@ Architecture: each analysis implements the `Analysis` interface
 (`src/analyses/types.ts`) — `selectFields` (which fields it evaluates, given
 the extracted fields and the schema; a deterministic pre-filter that also
 keeps API calls down, e.g. `doc-boolean-prefix` only ever looks at
-Boolean-typed fields) and `buildQuestion` (the per-field Noul
-instructions/criteria). `pii.ts`, `auth-gap.ts`, and `expensive-field.ts`
-each stand alone; the `doc-quality/` directory holds a *family* of small,
+Boolean-typed fields, and `db-leakage` only looks at scalar id-like fields
+whose name matches a real type already in the schema) and `buildQuestion`
+(the per-field Noul instructions/criteria). `pii.ts`, `auth-gap.ts`,
+`expensive-field.ts`, `db-leakage.ts`, `stringly-typed.ts`, and
+`mutation-payload.ts` each stand alone; the `doc-quality/` directory holds a
+*family* of small,
 single-concern rule modules (one file per rule) plus `doc-quality/index.ts`,
 which exports them as a flat array — this is the pattern to follow when a
 concern decomposes into several independently-reportable checks rather than

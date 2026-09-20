@@ -4,6 +4,7 @@ import { CliError } from "../../src/errors.js";
 
 const ALL_IDS = [
   "auth-gap",
+  "db-leakage",
   "doc-argument-naming",
   "doc-boolean-prefix",
   "doc-description",
@@ -12,11 +13,13 @@ const ALL_IDS = [
   "doc-naming-style",
   "doc-plural-collection",
   "expensive-field",
+  "mutation-payload",
   "pii",
+  "stringly-typed",
 ];
 
 describe("analysis registry", () => {
-  it("registers exactly the pii, auth-gap, expensive-field, and seven doc-quality rule analyses", () => {
+  it("registers exactly the 13 known analyses", () => {
     expect(listAnalysisIds().slice().sort()).toEqual(ALL_IDS);
   });
 

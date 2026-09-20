@@ -1,8 +1,11 @@
 import { CliError, ExitCode } from "../errors.js";
 import { authGapAnalysis } from "./auth-gap.js";
+import { dbLeakageAnalysis } from "./db-leakage.js";
 import { docQualityAnalyses } from "./doc-quality/index.js";
 import { expensiveFieldAnalysis } from "./expensive-field.js";
+import { mutationPayloadAnalysis } from "./mutation-payload.js";
 import { piiAnalysis } from "./pii.js";
+import { stringlyTypedAnalysis } from "./stringly-typed.js";
 import type { Analysis } from "./types.js";
 
 export const ANALYSES: readonly Analysis[] = [
@@ -10,6 +13,9 @@ export const ANALYSES: readonly Analysis[] = [
   ...docQualityAnalyses,
   authGapAnalysis,
   expensiveFieldAnalysis,
+  dbLeakageAnalysis,
+  stringlyTypedAnalysis,
+  mutationPayloadAnalysis,
 ];
 
 export function listAnalysisIds(): string[] {
