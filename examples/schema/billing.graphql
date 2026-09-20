@@ -1,0 +1,10 @@
+type CreditCard {
+  id: ID!
+  creditCardNumber: String!
+  expiryMonth: Int!
+  last4: String!
+}
+
+extend type User {
+  creditCard: CreditCard
+}

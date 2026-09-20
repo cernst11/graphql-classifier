@@ -1,0 +1,336 @@
+"""User account information."""
+type User {
+  id: ID!
+  """Unique username."""
+  username: String!
+  """User's full name."""
+  fullName: String
+  """User's email address."""
+  email: String!
+  """Hashed password (should never be exposed)."""
+  passwordHash: String!
+  """User's phone number."""
+  phoneNumber: String
+  """Date of birth."""
+  dateOfBirth: String
+  """Social Security Number (PII)."""
+  ssn: String
+  """Driver's license number."""
+  driverLicenseNumber: String
+  """Passport number."""
+  passportNumber: String
+  """Physical mailing address."""
+  address: Address
+  """IP address of last login."""
+  lastLoginIp: String
+  """Geolocation of last login."""
+  lastLoginLocation: Location
+  """Account created timestamp."""
+  createdAt: String!
+  """Account updated timestamp."""
+  updatedAt: String!
+  """Account status."""
+  status: UserStatus!
+  """Authentication tokens."""
+  authTokens: [AuthToken!]!
+  """Two-factor authentication secret (base32)."""
+  twoFactorSecret: String
+  """User's billing profiles."""
+  billingProfiles: [BillingProfile!]!
+  """User's orders."""
+  orders(first: Int): [Order!]!
+}
+
+"""User account status."""
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+  PENDING_VERIFICATION
+}
+
+"""User's physical address."""
+type Address {
+  id: ID!
+  """Street address."""
+  street: String!
+  """City."""
+  city: String!
+  """State/Province."""
+  state: String!
+  """Postal/ZIP code."""
+  postalCode: String!
+  """Country."""
+  country: String!
+  """Latitude coordinate."""
+  latitude: Float
+  """Longitude coordinate."""
+  longitude: Float
+}
+
+"""Geolocation data."""
+type Location {
+  id: ID!
+  """Latitude."""
+  lat: Float!
+  """Longitude."""
+  lng: Float!
+  """City name."""
+  city: String
+  """Country code."""
+  country: String
+  """Accuracy in meters."""
+  accuracy: Float
+}
+
+"""Authentication token."""
+type AuthToken {
+  id: ID!
+  """Token value (secret)."""
+  token: String!
+  """Token type."""
+  type: TokenType!
+  """Expiration time."""
+  expiresAt: String!
+  """Created timestamp."""
+  createdAt: String!
+  """Last used timestamp."""
+  lastUsedAt: String
+}
+
+"""Token type."""
+enum TokenType {
+  API_KEY
+  REFRESH_TOKEN
+  BEARER_TOKEN
+  WEBHOOK_SECRET
+}
+
+"""Billing profile with payment info."""
+type BillingProfile {
+  id: ID!
+  """Profile name."""
+  name: String!
+  """Email for billing."""
+  billingEmail: String!
+  """Tax ID."""
+  taxId: String
+  """Payment methods on file."""
+  paymentMethods: [PaymentMethod!]!
+  """Invoices."""
+  invoices: [Invoice!]!
+}
+
+"""Payment method (credit card, etc.)."""
+type PaymentMethod {
+  id: ID!
+  """Card holder name."""
+  cardholderName: String!
+  """Credit card number (last 4 only in display, full in storage)."""
+  cardNumber: String!
+  """Card expiration month."""
+  expirationMonth: Int!
+  """Card expiration year."""
+  expirationYear: Int!
+  """CVV/CVC code."""
+  cvv: String!
+  """Card type (Visa, Mastercard, etc)."""
+  cardType: String!
+  """Billing address."""
+  billingAddress: Address!
+  """Is default payment method."""
+  isDefault: Boolean!
+}
+
+"""Invoice."""
+type Invoice {
+  id: ID!
+  """Invoice number."""
+  invoiceNumber: String!
+  """Invoice date."""
+  date: String!
+  """Invoice total."""
+  total: Float!
+  """Payment status."""
+  status: PaymentStatus!
+  """PDF URL."""
+  pdfUrl: String
+}
+
+"""Payment status."""
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+"""Customer order."""
+type Order {
+  id: ID!
+  """Order number."""
+  orderNumber: String!
+  """Customer who placed order."""
+  customer: User!
+  """Shipping address."""
+  shippingAddress: Address!
+  """Billing address."""
+  billingAddress: Address!
+  """Order items."""
+  items: [OrderItem!]!
+  """Order total."""
+  total: Float!
+  """Tax amount."""
+  taxAmount: Float!
+  """Shipping cost."""
+  shippingCost: Float!
+  """Discount applied."""
+  discount: Float
+  """Order status."""
+  status: OrderStatus!
+  """Payment status."""
+  paymentStatus: PaymentStatus!
+  """Tracking number."""
+  trackingNumber: String
+  """Shipping carrier."""
+  carrier: String
+  """Created timestamp."""
+  createdAt: String!
+  """Shipped timestamp."""
+  shippedAt: String
+  """Delivered timestamp."""
+  deliveredAt: String
+}
+
+"""Order item."""
+type OrderItem {
+  id: ID!
+  """Product ordered."""
+  product: Product!
+  """Quantity ordered."""
+  quantity: Int!
+  """Unit price."""
+  unitPrice: Float!
+  """Line total."""
+  lineTotal: Float!
+}
+
+"""Product."""
+type Product {
+  id: ID!
+  """Product name."""
+  name: String!
+  """Product description."""
+  description: String
+  """Product SKU."""
+  sku: String!
+  """Current price."""
+  price: Float!
+  """Inventory count."""
+  inventory: Int!
+  """Is active."""
+  isActive: Boolean!
+}
+
+"""Order status."""
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+"""Query root."""
+type Query {
+  """Get current user."""
+  me: User
+  """Get user by ID."""
+  user(id: ID!): User
+  """Search users."""
+  users(first: Int, query: String): [User!]!
+  """Get order by ID."""
+  order(id: ID!): Order
+  """Get product by ID."""
+  product(id: ID!): Product
+  """Search products."""
+  products(first: Int, query: String): [Product!]!
+}
+
+"""Mutation root."""
+type Mutation {
+  """Update user profile."""
+  updateUser(input: UpdateUserInput!): User
+  """Create payment method."""
+  addPaymentMethod(input: AddPaymentMethodInput!): PaymentMethod
+  """Place an order."""
+  createOrder(input: CreateOrderInput!): Order
+}
+
+"""Update user input."""
+input UpdateUserInput {
+  id: ID!
+  """New email."""
+  email: String
+  """New phone number."""
+  phoneNumber: String
+  """New full name."""
+  fullName: String
+  """New password."""
+  newPassword: String
+}
+
+"""Add payment method input."""
+input AddPaymentMethodInput {
+  """Billing profile ID."""
+  billingProfileId: ID!
+  """Card holder name."""
+  cardholderName: String!
+  """Credit card number."""
+  cardNumber: String!
+  """Expiration month."""
+  expirationMonth: Int!
+  """Expiration year."""
+  expirationYear: Int!
+  """CVV."""
+  cvv: String!
+  """Billing address."""
+  billingAddress: AddressInput!
+}
+
+"""Create order input."""
+input CreateOrderInput {
+  """Items to order."""
+  items: [OrderItemInput!]!
+  """Shipping address."""
+  shippingAddress: AddressInput!
+  """Billing address."""
+  billingAddress: AddressInput!
+  """Payment method ID."""
+  paymentMethodId: ID!
+}
+
+"""Order item input."""
+input OrderItemInput {
+  """Product ID."""
+  productId: ID!
+  """Quantity."""
+  quantity: Int!
+}
+
+"""Address input."""
+input AddressInput {
+  """Street."""
+  street: String!
+  """City."""
+  city: String!
+  """State."""
+  state: String!
+  """ZIP code."""
+  postalCode: String!
+  """Country."""
+  country: String!
+}

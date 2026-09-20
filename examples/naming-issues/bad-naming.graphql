@@ -1,0 +1,71 @@
+# Deliberately bad naming and documentation, one violation per category from
+# Apollo's GraphQL naming guide, for exercising the doc-quality lint rule
+# family (src/analyses/doc-quality/*):
+#   node dist/cli.js examples/naming-issues --analysis "doc-*" --threshold 0.5
+# Contrast against examples/schema, which follows the conventions.
+
+type BadUser {
+  id: ID!
+
+  # Casing: should be camelCase
+  user_name: String
+  UserEmail: String
+  PHONE_NUMBER: String
+
+  # Booleans: missing is/has/can/should prefix
+  active: Boolean!
+  verified: Boolean!
+
+  # Collections: singular noun instead of plural
+  post: [BadPost!]!
+  follower: [BadUser!]!
+
+  # Redundant prefixes: repeats the parent type name ("BadUser")
+  userId: ID!
+  userEmail: String
+  userCreatedAt: String
+
+  # Hungarian notation
+  strDisplayName: String
+  intAge: Int
+  bIsAdmin: Boolean
+
+  # Vague / getter-style names
+  data: String
+  info: String
+  getFullName: String
+  calculatePostCount: Int
+
+  # Implementation leakage
+  mysql_id: Int
+  redis_cache_key: String
+
+  # Unclear abbreviation
+  crtAt: String
+
+  # Present but unhelpful description (just restates the name)
+  """Display name."""
+  displayName: String
+
+  # Well-named and self-evident — should NOT be flagged
+  createdAt: String!
+  email: String!
+}
+
+type BadPost {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  # Vague, uninformative name and return type
+  getData(id: ID!): String
+}
+
+type Mutation {
+  # Vague verb, generic/untyped-sounding arguments
+  process(filter: String, options: String): BadUser
+
+  # Missing verbNoun pattern (noun-only mutation name)
+  userUpdate(id: ID!, name: String): BadUser
+}
