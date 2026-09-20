@@ -24,10 +24,10 @@ interface CliOptions {
 const program = new Command();
 
 program
-  .name("gql-pii-audit")
+  .name("graphql-classifier")
   .description(
-    "Scan a GraphQL schema and run one or more field-level analyses (PII, documentation quality, " +
-      "authorization gaps) using TypeSafe's Jev model.",
+    "Scan a GraphQL schema and run one or more field-level analyses (PII, documentation/naming " +
+      "lint rules, authorization gaps, N+1/expensive-field risk) using TypeSafe's Jev model.",
   )
   .argument("[source]", "Glob pattern (e.g. schema/**/*.graphql) or a directory of .graphql/.gql files")
   .option(

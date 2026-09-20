@@ -1,13 +1,18 @@
 {
-  "name": "graphql-security-audit",
+  "name": "graphql-classifier",
   "version": "0.1.0",
-  "description": "Scans GraphQL schemas and flags fields that likely represent PII or other sensitive data, using TypeSafe's Jev model.",
+  "description": "Scans GraphQL schemas and flags fields across pluggable analyses (PII, auth gaps, N+1 risk, naming/doc lint rules) using TypeSafe's Jev model.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cernst11/graphql-classifier.git"
+  },
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "gql-pii-audit": "dist/cli.js"
+    "graphql-classifier": "dist/cli.js"
   },
   "files": [
     "dist"

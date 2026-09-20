@@ -1,9 +1,52 @@
-# graphql-security-audit
+# graphql-classifier
 
-Scans a GraphQL schema (loaded from a directory or glob of `.graphql`/`.gql`
-files) and runs one or more field-level **analyses** against it using
-TypeSafe's Jev model, via a single yes/no (`noul`) judgment per field per
-analysis:
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+
+Scan a GraphQL schema and get a lint-style report of what's risky, sensitive,
+or poorly named — powered by an LLM classifier, not regexes.
+
+`graphql-classifier` walks a GraphQL SDL schema (a directory or glob of
+`.graphql`/`.gql` files) and runs it through pluggable **analyses**, each
+asking a single fast yes/no judgment per field via
+[TypeSafe](https://typesafe.ai)'s Jev model. Out of the box it flags:
+
+- **PII / sensitive data** — credit cards, SSNs, emails, credentials, precise geolocation
+- **Authorization gaps** — root fields that look privileged but carry no auth directive
+- **N+1 / expensive-field risk** — relation fields prone to unbounded fetches or per-item resolution
+- **Documentation & naming** — seven independent lint rules (casing, boolean prefixes, plural collections, redundant prefixes, vague names, verbNoun mutations, argument naming) based on [Apollo's GraphQL naming guide](https://github.com/apollographql/skills/blob/main/skills/graphql-schema/references/naming.md)
+
+Every finding carries a probability score, is tunable via `--threshold`, and
+a full run typically finishes in a couple of seconds even on a 100+ field
+schema, thanks to batched classification calls.
+
+## Contents
+
+- [Quickstart](#quickstart)
+- [Analyses](#analyses)
+- [Usage](#usage)
+- [Example schemas](#example-schemas)
+- [Development](#development)
+- [License](#license)
+
+## Quickstart
+
+```sh
+git clone https://github.com/cernst11/graphql-classifier.git
+cd graphql-classifier
+npm install
+cp .env.example .env   # then set TYPESAFE_API_KEY
+npm run build
+
+node dist/cli.js examples/schema --threshold 0.5
+```
+
+`TYPESAFE_API_KEY` is read automatically by the TypeSafe SDK. If your `.env`
+still uses the older `JEV` variable name, the CLI falls back to it with a
+one-time warning — rename it to `TYPESAFE_API_KEY` to silence that.
+
+## Analyses
 
 | Analysis | id | Flags |
 | --- | --- | --- |
@@ -25,17 +68,6 @@ analysis:
 
 By default all ten analyses run; pick a subset with `--analysis`, including
 the whole doc-quality family at once with the wildcard `"doc-*"`.
-
-## Setup
-
-```sh
-npm install
-cp .env.example .env   # then set TYPESAFE_API_KEY
-```
-
-`TYPESAFE_API_KEY` is read automatically by the TypeSafe SDK. If your `.env`
-still uses the older `JEV` variable name, the CLI will fall back to it with a
-one-time warning — rename it to `TYPESAFE_API_KEY` to silence that.
 
 ## Usage
 
@@ -190,3 +222,7 @@ GraphQL SDL with no network calls. `classifier.ts` and `analysis-runner.ts`
 take an injectable `ClassifierClient`, so their tests — and each analysis's
 own `selectFields`/`buildQuestion` tests — use fakes rather than the real Jev
 API.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
